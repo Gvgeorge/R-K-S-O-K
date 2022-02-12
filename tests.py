@@ -3,7 +3,7 @@ import unittest
 from unittest import mock
 import os
 from server import FilePhoneBook, InvalidMethodError, RequestHandler, Response, NameIsTooLongError, CanNotParseRequestError, UndefinedResponseFromRegAgent
-from utils import PHONEBOOKFILESPATH, RequestVerb, ResponseStatus, RegulatorInfo, PROTOCOL, ENCODING
+from conf import PHONEBOOKFILESPATH, RequestVerb, ResponseStatus, RegulatorInfo, PROTOCOL, ENCODING
 
 
 events = []
@@ -27,17 +27,22 @@ class TestFilePhoneBook(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self.storage.get('Кирилл Хмурый'), '79842342143')
 
     async def test_write(self):
-        await self.storage.write('John', '78124445598')
-        self.assertEqual(await self.storage.get('John'), '78124445598')
+        print('-'*20)
+        await self.storage.write('John', ['78124445598'])
+        got = await self.storage.get('John')
+        self.assertEqual(got, '78124445598')
+        await self.storage.write('John', ['709931142255'])
+        got =  await self.storage.get('John')
+        self.assertIn(got, ['709931142255\r\n78124445598', '78124445598\r\n709931142255'])
+
         os.remove(os.path.join(PHONEBOOKFILESPATH, 'John'))
         
     async def test_delete(self):
-        await self.storage.write('John', '78124445598')
+        await self.storage.write('John', ['78124445598'])
         self.storage.delete('John')
         with self.assertRaises(FileNotFoundError):
             await self.storage.get('John')
-        # self.assertRaises(FileNotFoundError, self.storage.get, 'John')
-    
+
     def tearDown(self):
         os.remove(os.path.join(PHONEBOOKFILESPATH, 'Кирилл Хмурый'))
         events.append("tearDown")
@@ -93,7 +98,7 @@ class TestRequestHandler(unittest.TestCase):
 class TestResponse(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
         self.storage = FilePhoneBook(PHONEBOOKFILESPATH)
-        await self.storage.write('Petr', '79842342143')
+        await self.storage.write('Petr', ['79842342143'])
         events.append("asyncSetUp")
         
     async def test_make_get(self):

@@ -1,22 +1,12 @@
 import asyncio
 from importlib.metadata import files
+from re import A
 import aiofiles
 import os
 import sys
 from typing import Optional
-from utils import RequestVerb, ResponseStatus, RegulatorInfo, PROTOCOL, ENCODING, PHONEBOOKFILESPATH
+from conf import RequestVerb, ResponseStatus, RegulatorInfo, PROTOCOL, ENCODING, PHONEBOOKFILESPATH, logger
 
-test_message = '''ЗОПИШИ Путин РКСОК/1.0\r
-89112345678\r\n\r\n'''
-
-test_message_receive = '''ОТДОВАЙ Путин РКСОК/1.0\r\n\r\n'''
-
-test_message_delete = '''УДОЛИ Путин РКСОК/1.0\r\n\r\n'''
-
-
-phonebook = {'Ваня Хмурый': '8931987654',
-             'Лена Веселая': '123456789'   
-}
 
 class NameIsTooLongError(Exception):
     '''Error that occurs when the name in the request to RKSOK server
@@ -40,8 +30,6 @@ class RequestHandler:
     '''Class for managing requests sent to RKSOK server'''
     def __init__(self, raw_request: str):
         self._raw_request = raw_request
-        self._body = None
-        self._name = None
         self.parse_request()        
     
     @property
@@ -107,22 +95,23 @@ class Response:
     def prepare_request_to_reg_agent(raw_request: str, prefix: str) -> str:
         return f'{prefix}{raw_request}'
 
-    async def ask_permission(self, message: str, host: str, port: int) -> str:
+    async def ask_permission(self, reg_request: str, host: str, port: int) -> str:
         reader, writer = await asyncio.open_connection(
             host, port)
 
-        print(f'Send: {message!r}')
-        writer.write(message.encode())
+        logger.info(f'Asked for permission from regulatory agency ({host}, {port}): {reg_request}')
+        writer.write(reg_request.encode())
         await writer.drain()
-        data = await reader.read(100)
-        data = f'{data.decode()}'
-        #print(f'Received: {data}')
+        reg_response = await reader.read(100)
+        reg_response = f'{reg_response.decode()}'
+        logger.info(f'Got response from regulatory agent: ({host}, {port}): {reg_response}')
         writer.close()
         await writer.wait_closed()
-        return data
+        return reg_response
 
     @property    
     async def permission_granted(self):
+        #вынести инфу о регуляторе в аргументы
         if self._request is not None:
             self.reg_agent_response =  await self.ask_permission(
                 self.prepare_request_to_reg_agent(self._request._raw_request, RegulatorInfo.PREFIX), 
@@ -137,14 +126,15 @@ class Response:
     async def _make_get(self, storage):
         try:
             phone = await storage.get(self._request.name)
-            self._response = f'{ResponseStatus.OK} {PROTOCOL}\r\n{phone}\r\n\r\n'
+            
+            self._response = f'{ResponseStatus.OK} {PROTOCOL}\r\n{phone.strip()}\r\n\r\n'
             
         except FileNotFoundError:
             self._response = f'{ResponseStatus.NOTFOUND} {PROTOCOL}\r\n\r\n'
         return self._response
     
     async def _make_write(self, storage):
-        phone = await storage.write(self._request.name, self._request.body[0]) # добавить логику для нескольких телефонов
+        phone = await storage.write(self._request.name, self._request.body) 
         self._response = f'{ResponseStatus.OK} {PROTOCOL}\r\n\r\n'            
         return self._response
     
@@ -176,13 +166,18 @@ class FilePhoneBook:
     
     async def get(self, name):
         async with aiofiles.open(os.path.join(self.folder_path, name), mode='r') as f:
-            contents = await f.read()
-        return contents
+            contents = await f.readlines()
+        return '\r\n'.join(line.strip() for line in contents)
     
-    async def write(self, name, phone):
-        '''Добавить когда уже существует телефон?'''
+    async def write(self, name, phones):        
+        async with aiofiles.open(os.path.join(self.folder_path, name), mode='a+') as f:
+            await f.seek(0)
+            existing_phones = await f.readlines()
+            existing_phones = {phone.strip() for phone in existing_phones if phone.strip()}
+
         async with aiofiles.open(os.path.join(self.folder_path, name), mode='w') as f:
-            await f.write(phone)
+            new_phones = {phone.strip() for phone in phones if phone.strip()}.union(existing_phones)
+            await f.writelines([f'{phone}\r\n' for phone in new_phones])
             
     def delete(self, name):
         os.remove(os.path.join(self.folder_path, name))
@@ -191,7 +186,7 @@ class FilePhoneBook:
         
 
 class Server:
-    def __init__(self, addr: str, port: int, phonebook: dict):
+    def __init__(self, addr: str, port: int, phonebook: FilePhoneBook):
         self._addr = addr
         self._port = port
         self._phonebook = phonebook
@@ -200,18 +195,20 @@ class Server:
     async def handle_request(self, reader, writer):
         data = await reader.read(100)
         raw_request = data.decode()
-        print('RAW:', raw_request)
+        # print('RAW:', raw_request)
         addr = writer.get_extra_info('peername')
+        logger.info(f'Received incoming request from {addr}: {raw_request}')
 
-        print(f"Received {raw_request} from {addr}")
+        # print(f"Received {raw_request} from {addr}")
         
         response = await Response(raw_request).make_response(self._phonebook)
-        print(f"Send: {response!r}")
+        # print(f"Send: {response!r}")
+        logger.info(f'Send the following response to {addr}: {response}')
 
         writer.write(response.encode())
         await writer.drain()
 
-        print("Close the connection")
+        # print("Close the connection")
         writer.close()
         return response
 

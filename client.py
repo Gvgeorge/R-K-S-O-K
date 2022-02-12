@@ -1,4 +1,4 @@
-from utils import RequestVerb, ResponseStatus, PROTOCOL, ENCODING
+from conf import RequestVerb, ResponseStatus, PROTOCOL, ENCODING
 import socket
 import sys
 from typing import Optional
