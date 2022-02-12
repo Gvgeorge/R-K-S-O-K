@@ -25,6 +25,9 @@ class InvalidMethodError(Exception):
     """Error that occurs when we can parse the request to RKSOK server, but the method is invalid"""
     pass
 
+class WrongProtocol(Exception):
+    """Error that occurs when the client attempts to use protocol which is not supported by RKSOK server"""
+    
 
 class RequestHandler:
     '''Class for managing requests sent to RKSOK server'''
@@ -69,6 +72,9 @@ class RequestHandler:
         
         if self._method == RequestVerb.WRITE:
             self._body = [line.strip() for line in request_lines if line.strip()][1:]
+            
+        if self._protocol != PROTOCOL:
+            raise WrongProtocol
         
     def __str__(self):
         return f'RequestHandler object. Method: {self._method}, Name: {self._name}, Protocol: {self._protocol}, Body: {self._body}'
@@ -87,7 +93,7 @@ class Response:
     def set_request(self, raw_request: str):
         try:
             self._request = RequestHandler(raw_request)
-        except (InvalidMethodError, NameIsTooLongError, CanNotParseRequestError):
+        except (InvalidMethodError, NameIsTooLongError, CanNotParseRequestError, WrongProtocol):
             self._request = None
         return self._request
     
