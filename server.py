@@ -105,12 +105,12 @@ class Response:
         reader, writer = await asyncio.open_connection(
             host, port)
 
-        logger.info(f'Asked for permission from regulatory agency ({host}, {port}): {reg_request}')
+        logger.info(f'Asked for permission from regulatory agency ({host}, {port}): {reg_request!r}')
         writer.write(reg_request.encode())
         await writer.drain()
         reg_response = await reader.read(100)
         reg_response = f'{reg_response.decode()}'
-        logger.info(f'Got response from regulatory agent: ({host}, {port}): {reg_response}')
+        logger.info(f'Got response from regulatory agent: ({host}, {port}): {reg_response!r}')
         writer.close()
         await writer.wait_closed()
         return reg_response
