@@ -179,14 +179,9 @@ class FilePhoneBook:
         return '\r\n'.join(line.strip() for line in contents)
     
     async def write(self, name, phones):        
-        async with aiofiles.open(os.path.join(self.folder_path, name), mode='a+') as f:
-            await f.seek(0)
-            existing_phones = await f.readlines()
-            existing_phones = {phone.strip() for phone in existing_phones if phone.strip()}
-
         async with aiofiles.open(os.path.join(self.folder_path, name), mode='w') as f:
-            new_phones = {phone.strip() for phone in phones if phone.strip()}.union(existing_phones)
-            await f.writelines([f'{phone}\r\n' for phone in new_phones])
+            phones = {phone.strip() for phone in phones if phone.strip()}
+            await f.writelines([f'{phone}\r\n' for phone in phones])
             
     def delete(self, name):
         os.remove(os.path.join(self.folder_path, name))

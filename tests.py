@@ -26,13 +26,12 @@ class TestFilePhoneBook(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self.storage.get('Кирилл Хмурый'), '79842342143')
 
     async def test_write(self):
-        print('-'*20)
         await self.storage.write('John', ['78124445598'])
         got = await self.storage.get('John')
         self.assertEqual(got, '78124445598')
         await self.storage.write('John', ['709931142255'])
         got =  await self.storage.get('John')
-        self.assertIn(got, ['709931142255\r\n78124445598', '78124445598\r\n709931142255'])
+        self.assertEqual(got, '709931142255')
 
         os.remove(os.path.join(PHONEBOOKFILESPATH, 'John'))
         
@@ -181,7 +180,6 @@ class TestResponse(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await resp.make_response(self.storage), resp.reg_agent_response)
         with self.assertRaises(FileNotFoundError):
             await self.storage.get('Владимир Путин')
-        # self.assertRaises(FileNotFoundError, await self.storage.get, 'Владимир Путин')
 
         raw_request = 'УДОЛИ Владимир Путин РКСОК/1.0\r\n\r\n'
         resp = Response(raw_request)
@@ -190,7 +188,6 @@ class TestResponse(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(FileNotFoundError):
             await self.storage.get('Владимир Путин')
 
-        # self.assertRaises(FileNotFoundError, await self.storage.get, 'Владимир Путин')
 
 
 if __name__ == '__main__':
