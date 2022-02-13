@@ -203,13 +203,13 @@ class Server:
         raw_request = data.decode()
         # print('RAW:', raw_request)
         addr = writer.get_extra_info('peername')
-        logger.info(f'Received incoming request from {addr}: {raw_request}')
+        logger.info(f'Received incoming request from {addr}: {raw_request!r}')
 
         # print(f"Received {raw_request} from {addr}")
         
         response = await Response(raw_request).make_response(self._phonebook)
         # print(f"Send: {response!r}")
-        logger.info(f'Send the following response to {addr}: {response}')
+        logger.info(f'Send the following response to {addr}: {response!r}')
 
         writer.write(response.encode())
         await writer.drain()
