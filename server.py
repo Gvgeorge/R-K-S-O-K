@@ -95,7 +95,7 @@ class Response:
         try:
             self._request = RequestHandler(raw_request)
         except (InvalidMethodError, NameIsTooLongError, CanNotParseRequestError, WrongProtocol) as err:
-            logger.exception('An exception was raised during the parsing of the request', backtrace=False, diagnose=True)
+            logger.exception('An exception was raised during the parsing of the request', backtrace=False, diagnose=False)
             self._request = None
         return self._request
     
@@ -216,7 +216,7 @@ class Server:
     @logger.catch
     async def run(self):
         server = await asyncio.start_server(
-            self.handle_request, self._addr, self._port)
+            self.handle_request, self._addr, self._port, limit=None)
 
         addrs = ', '.join(str(sock.getsockname()) for sock in server.sockets)
         print(f'Serving on {addrs}')
