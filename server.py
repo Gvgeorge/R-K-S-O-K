@@ -4,6 +4,7 @@ from re import A
 import aiofiles
 import os
 import sys
+import traceback
 from typing import Optional
 from conf import RequestVerb, ResponseStatus, RegulatorInfo, PROTOCOL, ENCODING, PHONEBOOKFILESPATH, logger
 
@@ -56,6 +57,8 @@ class RequestHandler:
         return self._method
     
     def parse_request(self):
+        if not self.raw_request.endswith('\r\n'):
+            raise CanNotParseRequestError
         request_lines = self.raw_request.split('\n')
         first_line = request_lines[0].split()
         if len(first_line) <= 2:
@@ -89,11 +92,14 @@ class Response:
     def __init__(self, raw_request: str):
         self._request = self.set_request(raw_request)
         self._response = ''
+        # self.reg_agent_response = ''
 
     def set_request(self, raw_request: str):
         try:
             self._request = RequestHandler(raw_request)
-        except (InvalidMethodError, NameIsTooLongError, CanNotParseRequestError, WrongProtocol):
+        except (InvalidMethodError, NameIsTooLongError, CanNotParseRequestError, WrongProtocol) as err:
+            # logger.warning(f'A following exception was raised during request parsing: {err.__class__.__name__}')
+            logger.exception('An exception was raised during the parsing of the request', backtrace=True, diagnose=True)
             self._request = None
         return self._request
     
@@ -217,7 +223,8 @@ class Server:
         # print("Close the connection")
         writer.close()
         return response
-
+    
+    @logger.catch
     async def run(self):
         server = await asyncio.start_server(
             self.handle_request, self._addr, self._port)

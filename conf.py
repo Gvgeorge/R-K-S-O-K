@@ -15,6 +15,7 @@ logger.add('RKSOK_logs.log',
            enqueue=True, rotation='1 week', compression='zip')
 
 
+
 class RequestVerb(str, Enum):
     """Verbs specified in RKSOK specs for requests"""
     GET = "ОТДОВАЙ"

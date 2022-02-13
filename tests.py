@@ -176,7 +176,7 @@ class TestResponse(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await resp.permission_granted, False)
         self.assertEqual(await resp.make_response(self.storage), resp.reg_agent_response)
         
-        raw_request = 'ЗОПИШИ Владимир Путин/1.0\r\n79846543210\r\n\r\n'
+        raw_request = 'ЗОПИШИ Владимир Путин РКСОК/1.0\r\n79846543210\r\n\r\n'
         resp = Response(raw_request)
         self.assertEqual(await resp.permission_granted, False)
         self.assertEqual(await resp.make_response(self.storage), resp.reg_agent_response)
