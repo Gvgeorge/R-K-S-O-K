@@ -105,7 +105,7 @@ class Response:
 
     async def ask_permission(self, reg_request: str, host: str, port: int) -> str:
         reader, writer = await asyncio.open_connection(
-            host, port)
+            host, port, limit=float('inf'))
 
         logger.info(f'Asked for permission from regulatory agency ({host}, {port}): {reg_request!r}')
         writer.write(reg_request.encode())
@@ -216,7 +216,7 @@ class Server:
     @logger.catch
     async def run(self):
         server = await asyncio.start_server(
-            self.handle_request, self._addr, self._port, limit=None)
+            self.handle_request, self._addr, self._port, limit=float('inf'))
 
         addrs = ', '.join(str(sock.getsockname()) for sock in server.sockets)
         print(f'Serving on {addrs}')
