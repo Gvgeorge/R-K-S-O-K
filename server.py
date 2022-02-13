@@ -1,10 +1,7 @@
 import asyncio
-from importlib.metadata import files
-from re import A
 import aiofiles
 import os
 import sys
-import traceback
 from typing import Optional
 from conf import RequestVerb, ResponseStatus, RegulatorInfo, PROTOCOL, ENCODING, PHONEBOOKFILESPATH, logger
 
