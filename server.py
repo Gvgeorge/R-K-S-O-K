@@ -111,7 +111,7 @@ class Response:
         logger.info(f'Asked for permission from regulatory agency ({host}, {port}): {reg_request!r}')
         writer.write(reg_request.encode())
         await writer.drain()
-        reg_response = await reader.read(100)
+        reg_response = await reader.readuntil(separator=b'\r\n\r\n')
         reg_response = f'{reg_response.decode()}'
         logger.info(f'Got response from regulatory agent: ({host}, {port}): {reg_response!r}')
         writer.close()
@@ -202,23 +202,21 @@ class Server:
     
     
     async def handle_request(self, reader, writer):
-        data = await reader.read(100)
+        logger.info('connection opened')
+        
+        data = await reader.readuntil(separator=b'\r\n\r\n')
         raw_request = data.decode()
-        # print('RAW:', raw_request)
         addr = writer.get_extra_info('peername')
         logger.info(f'Received incoming request from {addr}: {raw_request!r}')
-
-        # print(f"Received {raw_request} from {addr}")
         
         response = await Response(raw_request).make_response(self._phonebook)
-        # print(f"Send: {response!r}")
-        logger.info(f'Send the following response to {addr}: {response!r}')
+        logger.info(f'Sent the following response to {addr}: {response!r}')
 
         writer.write(response.encode())
         await writer.drain()
 
-        # print("Close the connection")
         writer.close()
+        logger.info('connection closed')
         return response
     
     @logger.catch
