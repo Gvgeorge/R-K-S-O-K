@@ -95,8 +95,7 @@ class Response:
         try:
             self._request = RequestHandler(raw_request)
         except (InvalidMethodError, NameIsTooLongError, CanNotParseRequestError, WrongProtocol) as err:
-            # logger.warning(f'A following exception was raised during request parsing: {err.__class__.__name__}')
-            logger.exception('An exception was raised during the parsing of the request', backtrace=True, diagnose=True)
+            logger.exception('An exception was raised during the parsing of the request', backtrace=False, diagnose=True)
             self._request = None
         return self._request
     
