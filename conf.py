@@ -7,13 +7,10 @@ ENCODING = "UTF-8"
 PHONEBOOKFILESPATH = 'phonebook'
 
 
-
-
-logger.add('RKSOK_logs.log', 
+logger.add('RKSOK_logs.log',
            format='{time}, {level}, {message}',
            level='INFO',
            enqueue=True, rotation='1 week', compression='zip')
-
 
 
 class RequestVerb(str, Enum):
@@ -22,7 +19,6 @@ class RequestVerb(str, Enum):
     DELETE = "УДОЛИ"
     WRITE = "ЗОПИШИ"
     CHECK = "АМОЖНА?"
-    
 
 
 class ResponseStatus(str, Enum):
@@ -32,6 +28,7 @@ class ResponseStatus(str, Enum):
     APPROVED = "МОЖНА"
     NOT_APPROVED = "НИЛЬЗЯ"
     INCORRECT_REQUEST = "НИПОНЯЛ"
+
 
 class RegulatorInfo(str, Enum):
     '''Information about regulatory agent for RKSOK protocol'''
