@@ -23,7 +23,7 @@ class InvalidMethodError(Exception):
     """Error that occurs when we can parse the request to RKSOK server, but the method is invalid"""
     pass
 
-class WrongProtocol(Exception):
+class InvalidProtocol(Exception):
     """Error that occurs when the client attempts to use protocol which is not supported by RKSOK server"""
     
 
@@ -74,7 +74,7 @@ class RequestHandler:
             self._body = [line.strip() for line in request_lines if line.strip()][1:]
             
         if self._protocol != PROTOCOL:
-            raise WrongProtocol
+            raise InvalidProtocol
         
     def __str__(self):
         return f'RequestHandler object. Method: {self._method}, Name: {self._name}, Protocol: {self._protocol}, Body: {self._body}'
@@ -94,7 +94,7 @@ class Response:
     def set_request(self, raw_request: str):
         try:
             self._request = RequestHandler(raw_request)
-        except (InvalidMethodError, NameIsTooLongError, CanNotParseRequestError, WrongProtocol) as err:
+        except (InvalidMethodError, NameIsTooLongError, CanNotParseRequestError, InvalidProtocol) as err:
             logger.exception('An exception was raised during the parsing of the request', backtrace=False, diagnose=False)
             self._request = None
         return self._request
@@ -179,7 +179,7 @@ class FilePhoneBook:
     
     async def write(self, name, phones):        
         async with aiofiles.open(os.path.join(self.folder_path, name), mode='w') as f:
-            phones = {phone.strip() for phone in phones if phone.strip()}
+            phones = [phone.strip() for phone in phones if phone.strip()]
             await f.writelines([f'{phone}\r\n' for phone in phones])
             
     def delete(self, name):
