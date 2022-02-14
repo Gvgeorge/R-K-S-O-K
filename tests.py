@@ -106,20 +106,20 @@ class TestResponse(unittest.IsolatedAsyncioTestCase):
     async def test_make_get(self):
         raw_request = 'ОТДОВАЙ Petr РКСОК/1.0\r\n\r\n'
         resp = Response(raw_request)
-        self.assertEqual(await resp.permission_granted, True)
+        self.assertEqual(await resp.permission_granted(), True)
         self.assertEqual(await resp._make_get(self.storage),
                          'НОРМАЛДЫКС РКСОК/1.0\r\n79842342143\r\n\r\n')
 
         raw_request = 'ОТДОВАЙ Vitya Ivanov РКСОК/1.0\r\n\r\n'
         resp = Response(raw_request)
-        self.assertEqual(await resp.permission_granted, True)
+        self.assertEqual(await resp.permission_granted(), True)
         self.assertEqual(await resp._make_get(self.storage),
                          'НИНАШОЛ РКСОК/1.0\r\n\r\n')
 
     async def test_make_write(self):
         raw_request = 'ЗОПИШИ Витя РКСОК/1.0\r\n79846543210\r\n\r\n'
         resp = Response(raw_request)
-        self.assertEqual(await resp.permission_granted, True)
+        self.assertEqual(await resp.permission_granted(), True)
         self.assertEqual(await resp._make_write(self.storage),
                          'НОРМАЛДЫКС РКСОК/1.0\r\n\r\n')
         self.assertEqual(await self.storage.get('Витя'), '79846543210')
@@ -127,7 +127,7 @@ class TestResponse(unittest.IsolatedAsyncioTestCase):
     async def test_make_delete(self):
         raw_request = 'УДОЛИ Petr РКСОК/1.0\r\n\r\n'
         resp = Response(raw_request)
-        self.assertEqual(await resp.permission_granted, True)
+        self.assertEqual(await resp.permission_granted(), True)
         self.assertEqual(await resp._make_delete(self.storage),
                          'НОРМАЛДЫКС РКСОК/1.0\r\n\r\n')
         with self.assertRaises(FileNotFoundError):
@@ -135,7 +135,7 @@ class TestResponse(unittest.IsolatedAsyncioTestCase):
 
         raw_request = 'УДОЛИ Никита Пирожков РКСОК/1.0\r\n\r\n'
         resp = Response(raw_request)
-        self.assertEqual(await resp.permission_granted, True)
+        self.assertEqual(await resp.permission_granted(), True)
         self.assertEqual(await resp._make_delete(self.storage),
                          'НИНАШОЛ РКСОК/1.0\r\n\r\n')
 
@@ -173,12 +173,12 @@ class TestResponse(unittest.IsolatedAsyncioTestCase):
     async def test_make_response_permission_not_granted(self):
         raw_request = 'ОТДОВАЙ Владимир Путин РКСОК/1.0\r\n\r\n'
         resp = Response(raw_request)
-        self.assertEqual(await resp.permission_granted, False)
+        self.assertEqual(await resp.permission_granted(), False)
         self.assertEqual(await resp.make_response(self.storage),
                          resp.reg_agent_response)
         raw_request = 'ЗОПИШИ Владимир Путин РКСОК/1.0\r\n79846543210\r\n\r\n'
         resp = Response(raw_request)
-        self.assertEqual(await resp.permission_granted, False)
+        self.assertEqual(await resp.permission_granted(), False)
         self.assertEqual(await resp.make_response(self.storage),
                          resp.reg_agent_response)
         with self.assertRaises(FileNotFoundError):
@@ -186,7 +186,7 @@ class TestResponse(unittest.IsolatedAsyncioTestCase):
 
         raw_request = 'УДОЛИ Владимир Путин РКСОК/1.0\r\n\r\n'
         resp = Response(raw_request)
-        self.assertEqual(await resp.permission_granted, False)
+        self.assertEqual(await resp.permission_granted(), False)
         self.assertEqual(await resp.make_response(self.storage),
                          resp.reg_agent_response)
         with self.assertRaises(FileNotFoundError):

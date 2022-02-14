@@ -9,9 +9,31 @@ from exceptions import RKSOKException, NameIsTooLongError, \
     InvalidMethodError, InvalidProtocolError
 
 
+class FilePhoneBook:
+    def __init__(self, folder_path):
+        self.folder_path = folder_path
+        if not os.path.exists(self.folder_path):
+            os.makedirs(self.folder_path)
+
+    async def get(self, name):
+        file_path = os.path.join(self.folder_path, name)
+        async with aiofiles.open(file_path, mode='r') as f:
+            contents = await f.readlines()
+        return '\r\n'.join(line.strip() for line in contents)
+
+    async def write(self, name, phones):
+        file_path = os.path.join(self.folder_path, name)
+        async with aiofiles.open(file_path, mode='w') as f:
+            phones = [phone.strip() for phone in phones if phone.strip()]
+            await f.writelines([f'{phone}\r\n' for phone in phones])
+
+    def delete(self, name):
+        os.remove(os.path.join(self.folder_path, name))
+
+
 class RequestHandler:
     '''Class for managing requests sent to RKSOK server'''
-    def __init__(self, raw_request: str):
+    def __init__(self, raw_request: str) -> None:
         self._raw_request = raw_request
         self.parse_request()
 
@@ -35,13 +57,28 @@ class RequestHandler:
     def method(self):
         return self._method
 
-    def parse_request(self):
-        if not self.raw_request.endswith('\r\n'):
+    def parse_request(self, request: str = None) -> None:
+        '''
+        Parses incoming request into:
+        _method: str
+        _name: str
+        _protocol: str
+        _body: list of strings
+
+        If any of parsed variables do not meet the
+        standarts of RKSOK protocol an appropriate exception is raised
+        '''
+        if request is None:
+            request = self._raw_request
+
+        if not request.endswith('\r\n'):
             raise CanNotParseRequestError
-        request_lines = self.raw_request.split('\n')
+
+        request_lines = request.split('\n')
         first_line = request_lines[0].split()
         if len(first_line) <= 2:
             raise CanNotParseRequestError
+
         self._method = first_line[0]
         self._name = ' '.join(first_line[1:-1])
         self._protocol = first_line[-1]
@@ -53,12 +90,12 @@ class RequestHandler:
         if len(self._name) > 30:
             raise NameIsTooLongError
 
+        if self._protocol != PROTOCOL:
+            raise InvalidProtocolError
+
         if self._method == RequestVerb.WRITE:
             self._body = [line.strip() for line in request_lines
                           if line.strip()][1:]
-
-        if self._protocol != PROTOCOL:
-            raise InvalidProtocolError
 
     def __str__(self):
         return f'RequestHandler object. Method: {self._method} \
@@ -70,15 +107,21 @@ class RequestHandler:
 
 
 class Response:
+    '''
+    Class for creating a response to the RKSOK request
+    Also handles communication with regulatory agency.
+    method_map consists of valid RKSOK methods
+    Evert response object matches a certain request
+    '''
     method_map = {RequestVerb.GET: '_make_get',
                   RequestVerb.WRITE: '_make_write',
                   RequestVerb.DELETE: '_make_delete'}
 
-    def __init__(self, raw_request: str):
+    def __init__(self, raw_request: str) -> None:
         self._request = self.set_request(raw_request)
         self._response = ''
 
-    def set_request(self, raw_request: str):
+    def set_request(self, raw_request: str) -> RequestHandler | None:
         try:
             self._request = RequestHandler(raw_request)
         except (RKSOKException):
@@ -94,11 +137,16 @@ class Response:
 
     async def ask_permission(self, reg_request: str,
                              host: str, port: int) -> str:
+        '''
+        Creates a connection to the regulatory agency
+        sends a request and saves a response
+        '''
         reader, writer = await asyncio.open_connection(
             host, port, limit=float('inf'))
 
         logger.info(f'Asked for permission from regulatory \
             agency ({host}, {port}): {reg_request!r}')
+
         writer.write(reg_request.encode())
         await writer.drain()
         reg_response = await reader.readuntil(separator=b'\r\n\r\n')
@@ -109,23 +157,30 @@ class Response:
         await writer.wait_closed()
         return reg_response
 
-    @property
-    async def permission_granted(self):
-        # вынести инфу о регуляторе в аргументы
-        if self._request is not None:
-            self.reg_agent_response = await self.ask_permission(
-                self.prepare_request_to_reg_agent(
-                    self._request._raw_request, RegulatorInfo.PREFIX
-                ),
-                RegulatorInfo.HOST, RegulatorInfo.PORT)
+    async def permission_granted(self,
+                                 prefix: str = RegulatorInfo.PREFIX,
+                                 reg_host: str = RegulatorInfo.HOST,
+                                 reg_port: int = RegulatorInfo.PORT,
+                                 msg_approved: str = ResponseStatus.APPROVED,
+                                 msg_denied: str = ResponseStatus.NOT_APPROVED
+                                 ) -> bool:
+        '''
+        Processes the response from regulatory agency
+        '''
+        self.reg_agent_response = await self.ask_permission(
+            self.prepare_request_to_reg_agent(self._request._raw_request,
+                                              prefix), reg_host, reg_port)
 
-        if self.reg_agent_response.startswith(ResponseStatus.APPROVED):
+        if self.reg_agent_response.startswith(msg_approved):
             return True
-        elif self.reg_agent_response.startswith(ResponseStatus.NOT_APPROVED):
+        elif self.reg_agent_response.startswith(msg_denied):
             return False
         raise UndefinedResponseFromRegAgent
 
-    async def _make_get(self, storage):
+    async def _make_get(self, storage: FilePhoneBook) -> str:
+        '''
+        Prepares a response to a GET ('ОТДОВАЙ') request from RKSOK client
+        '''
         try:
             phone = await storage.get(self._request.name)
             self._response = f'{ResponseStatus.OK} ' + \
@@ -135,12 +190,18 @@ class Response:
             self._response = f'{ResponseStatus.NOTFOUND} {PROTOCOL}\r\n\r\n'
         return self._response
 
-    async def _make_write(self, storage):
+    async def _make_write(self, storage: FilePhoneBook) -> str:
+        '''
+        Prepares a response to a WRITE ('ЗОПИШИ') request from RKSOK client
+        '''
         await storage.write(self._request.name, self._request.body)
         self._response = f'{ResponseStatus.OK} {PROTOCOL}\r\n\r\n'
         return self._response
 
-    async def _make_delete(self, storage):
+    async def _make_delete(self, storage: FilePhoneBook) -> str:
+        '''
+        Prepares a response to a DELETE ('УДОЛИ') request from RKSOK client
+        '''
         try:
             storage.delete(self._request.name)
             self._response = f'{ResponseStatus.OK} {PROTOCOL}\r\n\r\n'
@@ -148,41 +209,30 @@ class Response:
             self._response = f'{ResponseStatus.NOTFOUND} {PROTOCOL}\r\n\r\n'
         return self._response
 
-    def _make_bad_request(self):
+    def _make_bad_request(self) -> str:
+        '''
+        Prepares a response for the RKSOK request we could not handle
+        '''
         self._response = f'{ResponseStatus.INCORRECT_REQUEST} ' + \
             f'{PROTOCOL}\r\n\r\n'
         return self._response
 
-    async def make_response(self, storage):
-        if self._request is None:
+    async def make_response(self, storage: FilePhoneBook,
+                            request: RequestHandler = None) -> str:
+        '''
+        Matches RKSOK request to the appropriate handling method
+        '''
+        if request is None:
+            request = self._request
+
+        if request is None:
             return self._make_bad_request()
-        if not await self.permission_granted:
+
+        if not await self.permission_granted():
             self._response = self.reg_agent_response
             return self._response
         return await getattr(self, self.method_map[self._request.method],
                              self._make_bad_request)(storage)
-
-
-class FilePhoneBook:
-    def __init__(self, folder_path):
-        self.folder_path = folder_path
-        if not os.path.exists(self.folder_path):
-            os.makedirs(self.folder_path)
-
-    async def get(self, name):
-        file_path = os.path.join(self.folder_path, name)
-        async with aiofiles.open(file_path, mode='r') as f:
-            contents = await f.readlines()
-        return '\r\n'.join(line.strip() for line in contents)
-
-    async def write(self, name, phones):
-        file_path = os.path.join(self.folder_path, name)
-        async with aiofiles.open(file_path, mode='w') as f:
-            phones = [phone.strip() for phone in phones if phone.strip()]
-            await f.writelines([f'{phone}\r\n' for phone in phones])
-
-    def delete(self, name):
-        os.remove(os.path.join(self.folder_path, name))
 
 
 class Server:
@@ -191,7 +241,13 @@ class Server:
         self._port = port
         self._phonebook = phonebook
 
-    async def handle_request(self, reader, writer):
+    async def handle_request(self,
+                             reader: asyncio.StreamReader,
+                             writer: asyncio.StreamWriter) -> str:
+        '''
+        Handles the connection from the client.
+        Receives request and sends the response.
+        '''
         logger.info('connection opened')
         data = await reader.readuntil(separator=b'\r\n\r\n')
         raw_request = data.decode()
@@ -208,7 +264,10 @@ class Server:
         return response
 
     @logger.catch
-    async def run(self):
+    async def run(self) -> None:
+        '''
+        Runs the server!
+        '''
         server = await asyncio.start_server(
             self.handle_request, self._addr, self._port, limit=float('inf'))
 
