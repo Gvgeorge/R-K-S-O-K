@@ -3,7 +3,7 @@ import asyncio
 import os
 import sys
 from conf import logger, RequestVerb, ResponseStatus, RegulatorInfo, \
-    PROTOCOL, PHONEBOOKFILESPATH
+    PROTOCOL, ServerInfo
 from exceptions import RKSOKException, NameIsTooLongError, \
     CanNotParseRequestError, UndefinedResponseFromRegAgent, \
     InvalidMethodError, InvalidProtocolError
@@ -297,5 +297,5 @@ class Server:
 
 
 if __name__ == '__main__':
-    filestorage = FilePhoneBook(PHONEBOOKFILESPATH)
-    asyncio.run(Server('0.0.0.0', 8888, filestorage).run())
+    filestorage = FilePhoneBook(ServerInfo.FOLDERPATH)
+    asyncio.run(Server('ServerInfo.HOST', ServerInfo.PORT, filestorage).run())

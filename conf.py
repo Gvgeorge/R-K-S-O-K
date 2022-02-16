@@ -35,3 +35,12 @@ class RegulatorInfo(str, Enum):
     HOST = 'vragi-vezde.to.digital'
     PORT = 51624
     PREFIX = 'АМОЖНА? РКСОК/1.0\r\n'
+
+
+class ServerInfo(str, Enum):
+    '''
+    Server configuration
+    '''
+    HOST = '0.0.0.0'
+    PORT = 8888
+    FOLDERPATH = 'phonebook'

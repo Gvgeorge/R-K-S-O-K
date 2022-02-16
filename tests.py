@@ -1,7 +1,7 @@
 import unittest
 from unittest import mock
 import os
-from conf import PHONEBOOKFILESPATH, RequestVerb, PROTOCOL
+from conf import ServerInfo, RequestVerb, PROTOCOL
 from exceptions import NameIsTooLongError, CanNotParseRequestError
 from server import FilePhoneBook, RequestHandler, Response
 
@@ -16,8 +16,8 @@ class AsyncMock(mock.MagicMock):
 
 class TestFilePhoneBook(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
-        self.storage = FilePhoneBook(PHONEBOOKFILESPATH)
-        filepath = os.path.join(PHONEBOOKFILESPATH, 'Кирилл Хмурый')
+        self.storage = FilePhoneBook(ServerInfo.FOLDERPATH)
+        filepath = os.path.join(ServerInfo.FOLDERPATH, 'Кирилл Хмурый')
         with open(filepath, 'w') as self.f:
             self.f.write('79842342143')
         events.append("setUp")
@@ -34,7 +34,7 @@ class TestFilePhoneBook(unittest.IsolatedAsyncioTestCase):
         got = await self.storage.get('John')
         self.assertEqual(got, '709931142255')
 
-        os.remove(os.path.join(PHONEBOOKFILESPATH, 'John'))
+        os.remove(os.path.join(ServerInfo.FOLDERPATH, 'John'))
 
     async def test_delete(self):
         await self.storage.write('John', ['78124445598'])
@@ -43,7 +43,7 @@ class TestFilePhoneBook(unittest.IsolatedAsyncioTestCase):
             await self.storage.get('John')
 
     def tearDown(self):
-        os.remove(os.path.join(PHONEBOOKFILESPATH, 'Кирилл Хмурый'))
+        os.remove(os.path.join(ServerInfo.FOLDERPATH, 'Кирилл Хмурый'))
         events.append("tearDown")
 
 
@@ -99,7 +99,7 @@ class TestRequestHandler(unittest.TestCase):
 
 class TestResponse(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
-        self.storage = FilePhoneBook(PHONEBOOKFILESPATH)
+        self.storage = FilePhoneBook(ServerInfo.FOLDERPATH)
         await self.storage.write('Petr', ['79842342143'])
         events.append("asyncSetUp")
 
