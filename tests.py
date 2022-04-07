@@ -1,5 +1,6 @@
 import unittest
 from unittest import mock
+import hashlib
 import os
 from conf import FOLDERPATH, RequestVerb, PROTOCOL
 from exceptions import NameIsTooLongError, CanNotParseRequestError
@@ -20,7 +21,8 @@ class AsyncMock(mock.MagicMock):
 class TestFilePhoneBook(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.storage = FilePhoneBook(FOLDERPATH)
-        filepath = os.path.join(FOLDERPATH, 'Кирилл Хмурый')
+        filepath = os.path.join(
+            FOLDERPATH, hashlib.sha256('Кирилл Хмурый'.encode()).hexdigest())
         with open(filepath, 'w') as self.f:
             self.f.write('79842342143')
         events.append("setUp")
@@ -37,7 +39,8 @@ class TestFilePhoneBook(unittest.IsolatedAsyncioTestCase):
         got = await self.storage.get('John')
         self.assertEqual(got, '709931142255')
 
-        os.remove(os.path.join(FOLDERPATH, 'John'))
+        os.remove(os.path.join(
+            FOLDERPATH, hashlib.sha256('John'.encode()).hexdigest()))
 
     async def test_delete(self):
         await self.storage.write('John', ['78124445598'])
@@ -46,7 +49,8 @@ class TestFilePhoneBook(unittest.IsolatedAsyncioTestCase):
             await self.storage.get('John')
 
     def tearDown(self):
-        os.remove(os.path.join(FOLDERPATH, 'Кирилл Хмурый'))
+        os.remove(os.path.join(
+            FOLDERPATH, hashlib.sha256('Кирилл Хмурый'.encode()).hexdigest()))
         events.append("tearDown")
 
 

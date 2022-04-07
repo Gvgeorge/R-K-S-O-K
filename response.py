@@ -74,7 +74,7 @@ class Response:
         '''
         Matches RKSOK request to the appropriate handling method
         '''
-        
+
         if self._request is None:
             return self._make_bad_request()
 

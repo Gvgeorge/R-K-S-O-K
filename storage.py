@@ -1,4 +1,5 @@
 import aiofiles
+import hashlib
 import os
 
 
@@ -24,6 +25,7 @@ class FilePhoneBook(Storage):
             os.makedirs(self._folder_path)
 
     def _get_file_path(self, folder_name, file_name):
+        file_name = hashlib.sha256(file_name.encode()).hexdigest()
         file_path = os.path.join(folder_name, file_name)
         return file_path
 
