@@ -70,16 +70,12 @@ class Response:
             f'{PROTOCOL}\r\n\r\n'
         return self._response
 
-    async def make_response(self, storage: FilePhoneBook,
-                            request: Request = None,
-                            ) -> str:
+    async def make_response(self, storage: FilePhoneBook) -> str:
         '''
         Matches RKSOK request to the appropriate handling method
         '''
-        if request is None:
-            request = self._request
-
-        if request is None:  # look into it
+        
+        if self._request is None:
             return self._make_bad_request()
 
         reg_agent_response = await ask_permission(self._request.raw_request)
