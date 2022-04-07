@@ -30,17 +30,13 @@ class ResponseStatus(str, Enum):
     INCORRECT_REQUEST = "НИПОНЯЛ"
 
 
-class RegulatorInfo(str, Enum):
-    '''Information about regulatory agent for RKSOK protocol'''
-    HOST = 'vragi-vezde.to.digital'
-    PORT = 51624
-    PREFIX = 'АМОЖНА? РКСОК/1.0\r\n'
+'''Information about regulatory agent for RKSOK protocol'''
+REG_HOST = 'vragi-vezde.to.digital'
+REG_PORT = 51624
+REG_PREFIX = 'АМОЖНА? РКСОК/1.0\r\n'
 
 
-class ServerInfo(str, Enum):
-    '''
-    Server configuration
-    '''
-    HOST = '0.0.0.0'
-    PORT = 8888
-    FOLDERPATH = 'phonebook'
+'''Server configuration'''
+HOST = '0.0.0.0'
+PORT = 8888
+FOLDERPATH = 'phonebook'

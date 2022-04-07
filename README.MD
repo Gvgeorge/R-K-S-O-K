@@ -11,9 +11,9 @@ Main functionality is located in server.py.
 
 Project is made with python 3.10. Required libraries can be found in requirements.txt.
 
-To launch the project simply run python3.10 server.py in the terminal.
+To launch the project simply run `python3.10 server.py` in the terminal.
 
-Conf.py is where all the configuration is located, you can change server, port, folder to save files, information about the regulatory agent, logging settings and more.
+`Conf.py` is where all the configuration is located, you can change server, port, folder to save files, information about the regulatory agent, logging settings and more.
 
-Custom exceptions are stored in exceptions.py, they are raised while parsing the request if necessary and then handled while making a response.
+Custom exceptions are stored in `exceptions.py`, they are raised while parsing the request if necessary and then handled while making a response.
 
