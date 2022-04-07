@@ -1,6 +1,6 @@
 from conf import logger, RequestVerb, ResponseStatus, PROTOCOL
 from regagent import ask_permission, process_permission
-from request import RequestHandler
+from request import Request
 from exceptions import RKSOKException
 from storage import FilePhoneBook, Storage
 
@@ -20,9 +20,9 @@ class Response:
         self._request = self.set_request(raw_request)
         self._response = ''
 
-    def set_request(self, raw_request: str) -> RequestHandler | None:
+    def set_request(self, raw_request: str) -> Request | None:
         try:
-            self._request = RequestHandler(raw_request)
+            self._request = Request(raw_request)
         except (RKSOKException):
             logger.exception('An exception was raised \
                              during the parsing of the request',
@@ -71,7 +71,7 @@ class Response:
         return self._response
 
     async def make_response(self, storage: FilePhoneBook,
-                            request: RequestHandler = None,
+                            request: Request = None,
                             ) -> str:
         '''
         Matches RKSOK request to the appropriate handling method

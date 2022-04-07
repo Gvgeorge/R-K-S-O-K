@@ -20,11 +20,21 @@ class Server:
         '''
         logger.info('connection opened')
         data = await reader.readuntil(separator=b'\r\n\r\n')
-        raw_request = data.decode()
-        addr = writer.get_extra_info('peername')
-        logger.info(f'Received incoming request from {addr}: {raw_request!r}')
+        try:
+            raw_request = data.decode()
 
-        response = await Response(raw_request).make_response(self._phonebook)
+            addr = writer.get_extra_info('peername')
+            logger.info('Received incoming request' +
+                        f'from {addr}: {raw_request!r}')
+
+            response = await Response(raw_request).make_response(
+                self._phonebook)
+        except UnicodeDecodeError:
+            response = await Response(raw_request)._make_bad_request(
+                self._phonebook)
+            logger.info('UnicodeDecodeError while parsing' +
+                        f'request from {addr}: {raw_request!r}')
+
         logger.info(f'Sent the following response to {addr}: {response!r}')
 
         writer.write(response.encode())

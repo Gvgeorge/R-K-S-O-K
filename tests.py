@@ -5,7 +5,7 @@ from conf import FOLDERPATH, RequestVerb, PROTOCOL
 from exceptions import NameIsTooLongError, CanNotParseRequestError
 from regagent import ask_permission, process_permission
 from storage import FilePhoneBook
-from request import RequestHandler
+from request import Request
 from response import Response
 
 
@@ -50,36 +50,36 @@ class TestFilePhoneBook(unittest.IsolatedAsyncioTestCase):
         events.append("tearDown")
 
 
-class TestRequestHandler(unittest.TestCase):
+class TestRequest(unittest.TestCase):
     def test_parse_request_get(self):
         raw_request = 'ОТДОВАЙ Иван Хмурый РКСОК/1.0\r\n\r\n'
-        req = RequestHandler(raw_request)
+        req = Request(raw_request)
         self.assertEqual(req.name, 'Иван Хмурый')
         self.assertEqual(req.protocol, PROTOCOL)
         self.assertEqual(req.method, RequestVerb.GET)
 
         raw_request = 'ОТДОВАЙ РКСОК/1.0\r\n\r\n'
-        self.assertRaises(CanNotParseRequestError, RequestHandler, raw_request)
+        self.assertRaises(CanNotParseRequestError, Request, raw_request)
         raw_request = 'ОТДОВАЙ ОЧЕНЬ ДЛИННОЕ ИМЯ КОТОРОЕ ЯВНО БОЛЬШЕ ТРИДЦ' + \
             'АТИ СИМВОЛОВ ТОЧНО БОЛЬШЕ 30 СИМВОЛОВ РКСОК/1.0\r\n\r\n'
-        self.assertRaises(NameIsTooLongError, RequestHandler, raw_request)
+        self.assertRaises(NameIsTooLongError, Request, raw_request)
 
     def test_parse_request_delete(self):
         raw_request = 'УДОЛИ Иван Хмурый РКСОК/1.0\r\n\r\n'
-        req = RequestHandler(raw_request)
+        req = Request(raw_request)
         self.assertEqual(req.name, 'Иван Хмурый')
         self.assertEqual(req.protocol, PROTOCOL)
         self.assertEqual(req.method, RequestVerb.DELETE)
 
         raw_request = 'УДОЛИ РКСОК/1.0\r\n\r\n'
-        self.assertRaises(CanNotParseRequestError, RequestHandler, raw_request)
+        self.assertRaises(CanNotParseRequestError, Request, raw_request)
         raw_request = 'ОТДОВАЙ ОЧЕНЬ ДЛИННОЕ ИМЯ КОТОРОЕ ЯВНО БОЛЬШЕ ТРИДЦ' + \
             'АТИ СИМВОЛОВ ТОЧНО БОЛЬШЕ 30 СИМВОЛОВ РКСОК/1.0\r\n\r\n'
-        self.assertRaises(NameIsTooLongError, RequestHandler, raw_request)
+        self.assertRaises(NameIsTooLongError, Request, raw_request)
 
     def test_parse_request_write(self):
         raw_request = 'ЗОПИШИ Иван Хмурый РКСОК/1.0\r\n89012345678\r\n\r\n'
-        req = RequestHandler(raw_request)
+        req = Request(raw_request)
         self.assertEqual(req.name, 'Иван Хмурый')
         self.assertEqual(req.protocol, PROTOCOL)
         self.assertEqual(req.method, RequestVerb.WRITE)
@@ -87,17 +87,17 @@ class TestRequestHandler(unittest.TestCase):
 
         raw_request = 'ЗОПИШИ Иван Хмурый РКСОК/1.0\r\n' + \
             '89012345678 — мобильный\r\n02 — рабочий\r\n\r\n'
-        req = RequestHandler(raw_request)
+        req = Request(raw_request)
         self.assertEqual(req.name, 'Иван Хмурый')
         self.assertEqual(req.protocol, PROTOCOL)
         self.assertEqual(req.method, RequestVerb.WRITE)
         self.assertEqual(req.body, ['89012345678 — мобильный', '02 — рабочий'])
 
         raw_request = 'ЗОПИШИ РКСОК/1.0\r\n\r\n'
-        self.assertRaises(CanNotParseRequestError, RequestHandler, raw_request)
+        self.assertRaises(CanNotParseRequestError, Request, raw_request)
         raw_request = 'ОТДОВАЙ ОЧЕНЬ ДЛИННОЕ ИМЯ КОТОРОЕ ЯВНО БОЛЬШЕ ТРИДЦ' + \
             'АТИ СИМВОЛОВ ТОЧНО БОЛЬШЕ 30 СИМВОЛОВ РКСОК/1.0\r\n\r\n'
-        self.assertRaises(NameIsTooLongError, RequestHandler, raw_request)
+        self.assertRaises(NameIsTooLongError, Request, raw_request)
 
 
 class TestResponse(unittest.IsolatedAsyncioTestCase):

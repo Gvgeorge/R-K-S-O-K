@@ -3,10 +3,14 @@ from exceptions import NameIsTooLongError, CanNotParseRequestError, \
 from conf import RequestVerb, PROTOCOL
 
 
-class RequestHandler:
+class Request:
     '''Class for managing requests sent to RKSOK server'''
     def __init__(self, raw_request: str) -> None:
         self._raw_request = raw_request
+        self._method = None
+        self._name = None
+        self._protocol = None
+        self._body = None
         self.parse_request()
 
     @property
@@ -29,7 +33,7 @@ class RequestHandler:
     def method(self):
         return self._method
 
-    def parse_request(self, request: str = None) -> None:
+    def parse_request(self) -> None:
         '''
         Parses incoming request into:
         _method: str
@@ -41,20 +45,19 @@ class RequestHandler:
         standarts of RKSOK protocol an appropriate exception is raised
         '''
 
-        if request is None:
-            request = self._raw_request
+        request = self._raw_request
 
         if not request.endswith('\r\n'):
             raise CanNotParseRequestError
 
         request_lines = request.split('\n')
-        first_line = request_lines[0].split()
-        if len(first_line) <= 2:
+        first_line_words = request_lines[0].split()
+        if len(first_line_words) <= 2:
             raise CanNotParseRequestError
 
-        self._method = first_line[0]
-        self._name = ' '.join(first_line[1:-1])
-        self._protocol = first_line[-1]
+        self._method = first_line_words[0]
+        self._name = ' '.join(first_line_words[1:-1])
+        self._protocol = first_line_words[-1]
 
         valid_verbs = [RequestVerb.GET, RequestVerb.DELETE, RequestVerb.WRITE]
         if self.method not in valid_verbs:
@@ -71,9 +74,9 @@ class RequestHandler:
                           if line.strip()][1:]
 
     def __str__(self):
-        return f'RequestHandler object. Method: {self._method} \
+        return f'Request object. Method: {self._method} \
             Name: {self._name}, Protocol: {self._protocol}, Body: {self._body}'
 
     def __repr__(self):
-        return f'RequestHandler object. Method: {self._method}, \
+        return f'Request object. Method: {self._method}, \
             Name: {self._name}, Protocol: {self._protocol}, Body: {self._body}'
